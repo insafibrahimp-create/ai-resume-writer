@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI Resume Writer</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg: #0a0a0f;
+      --card: #12121a;
+      --border: #1e1e2e;
+      --accent: #6c63ff;
+      --accent2: #a78bfa;
+      --text: #e8e8f0;
+      --muted: #6b6b80;
+      --success: #34d399;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 2rem 1rem;
+      background-image: radial-gradient(ellipse at 20% 20%, rgba(108,99,255,0.08) 0%, transparent 60%),
+                        radial-gradient(ellipse at 80% 80%, rgba(167,139,250,0.06) 0%, transparent 60%);
+    }
+
+    .container { max-width: 720px; margin: 0 auto; }
+
+    header { text-align: center; margin-bottom: 2.5rem; animation: fadeUp 0.6s ease both; }
+
+    .badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(108,99,255,0.12); border: 1px solid rgba(108,99,255,0.3);
+      color: var(--accent2); font-size: 12px; padding: 4px 14px;
+      border-radius: 99px; margin-bottom: 1rem; letter-spacing: 0.05em;
+    }
+
+    h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(32px, 6vw, 52px);
+      background: linear-gradient(135deg, #fff 30%, var(--accent2));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      line-height: 1.15; margin-bottom: 0.5rem;
+    }
+
+    .subtitle { color: var(--muted); font-size: 15px; font-weight: 300; }
+
+    .card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 16px; padding: 1.75rem; margin-bottom: 1.25rem;
+      animation: fadeUp 0.6s ease both;
+    }
+
+    .card:nth-child(2) { animation-delay: 0.1s; }
+    .card:nth-child(3) { animation-delay: 0.2s; }
+    .card:nth-child(4) { animation-delay: 0.3s; }
+
+    .card-title {
+      font-size: 11px; font-weight: 500; text-transform: uppercase;
+      letter-spacing: 0.12em; color: var(--accent2); margin-bottom: 1.25rem;
+      display: flex; align-items: center; gap: 8px;
+    }
+
+    .card-title::after {
+      content: ''; flex: 1; height: 1px;
+      background: linear-gradient(90deg, var(--border), transparent);
+    }
+
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+    .form-row.full { grid-template-columns: 1fr; }
+
+    .field { display: flex; flex-direction: column; gap: 6px; }
+
+    label { font-size: 12px; color: var(--muted); font-weight: 500; letter-spacing: 0.04em; }
+
+    input, textarea, select {
+      background: rgba(255,255,255,0.03); border: 1px solid var(--border);
+      border-radius: 10px; padding: 10px 14px; color: var(--text);
+      font-family: 'DM Sans', sans-serif; font-size: 14px;
+      transition: border-color 0.2s, background 0.2s; width: 100%;
+    }
+
+    input:focus, textarea:focus, select:focus {
+      outline: none; border-color: var(--accent);
+      background: rgba(108,99,255,0.05);
+    }
+
+    input::placeholder, textarea::placeholder { color: #3a3a50; }
+    textarea { resize: none; }
+    select option { background: #1a1a2e; }
+
+    .pill-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+
+    .pill {
+      padding: 6px 14px; border-radius: 99px; border: 1px solid var(--border);
+      font-size: 12px; cursor: pointer; background: transparent;
+      color: var(--muted); transition: all 0.15s; font-family: 'DM Sans', sans-serif;
+    }
+
+    .pill:hover { border-color: var(--accent); color: var(--accent2); }
+    .pill.active { background: rgba(108,99,255,0.15); border-color: var(--accent); color: var(--accent2); }
+
+    .generate-btn {
+      width: 100%; padding: 15px; font-family: 'Playfair Display', serif;
+      font-size: 18px; background: linear-gradient(135deg, var(--accent), #8b5cf6);
+      color: #fff; border: none; border-radius: 12px; cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s; letter-spacing: 0.03em;
+      margin-top: 0.5rem; position: relative; overflow: hidden;
+    }
+
+    .generate-btn::before {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(135deg, transparent, rgba(255,255,255,0.1));
+    }
+
+    .generate-btn:hover { opacity: 0.92; }
+    .generate-btn:active { transform: scale(0.99); }
+    .generate-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .result-card {
+      background: var(--card); border: 1px solid rgba(108,99,255,0.3);
+      border-radius: 16px; padding: 2rem; display: none;
+      animation: fadeUp 0.4s ease both; margin-top: 1.25rem;
+      position: relative;
+    }
+
+    .result-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 1.5rem; padding-bottom: 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .result-title {
+      font-family: 'Playfair Display', serif; font-size: 18px;
+      color: var(--accent2);
+    }
+
+    .result-actions { display: flex; gap: 8px; }
+
+    .action-btn {
+      padding: 7px 14px; font-size: 12px; border-radius: 8px;
+      border: 1px solid var(--border); background: transparent;
+      color: var(--muted); cursor: pointer; font-family: 'DM Sans', sans-serif;
+      transition: all 0.15s;
+    }
+
+    .action-btn:hover { border-color: var(--accent); color: var(--accent2); }
+
+    .resume-content {
+      font-size: 14px; line-height: 1.8; color: var(--text);
+      white-space: pre-wrap; font-family: 'DM Sans', sans-serif;
+    }
+
+    .resume-content h2 {
+      font-family: 'Playfair Display', serif; font-size: 20px;
+      color: #fff; margin: 1.5rem 0 0.2rem; font-weight: 600;
+    }
+
+    .resume-content h3 {
+      font-size: 14px; color: var(--accent2); font-weight: 500;
+      text-transform: uppercase; letter-spacing: 0.08em;
+      margin: 0.75rem 0 0.15rem;
+    }
+
+    .resume-content strong { color: var(--accent2); font-weight: 500; }
+    .resume-content ul { margin: 0.1rem 0 0.4rem 1.2rem; padding: 0; }
+    .resume-content li { margin-bottom: 0.15rem; }
+
+    .dots { display: inline-flex; gap: 5px; align-items: center; height: 20px; }
+    .dots span {
+      width: 6px; height: 6px; background: #fff; border-radius: 50%;
+      animation: blink 0.8s infinite;
+    }
+    .dots span:nth-child(2) { animation-delay: 0.15s; }
+    .dots span:nth-child(3) { animation-delay: 0.3s; }
+
+    @keyframes blink {
+      0%,60%,100%{opacity:0.2;transform:scale(1)}
+      30%{opacity:1;transform:scale(1.3)}
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .api-notice {
+      background: rgba(31,18,0,0.8); border: 1px solid #3a2200;
+      border-radius: 10px; padding: 12px 14px; font-size: 13px;
+      color: #f0a040; margin-bottom: 1.25rem; display: none;
+    }
+
+    @media (max-width: 540px) {
+      .form-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="badge">✦ AI-Powered</div>
+    <h1>Resume Writer</h1>
+    <p class="subtitle">Fill in your details. Get a professional resume in seconds.</p>
+  </header>
+
+  <div class="api-notice" id="apiNotice">
+    ⚠️ Add your Groq API key (search for GROQ_API_KEY_HERE). Get it free at console.groq.com
+  </div>
+
+  <!-- Personal Info -->
+  <div class="card">
+    <p class="card-title">Personal Information</p>
+    <div class="form-row">
+      <div class="field">
+        <label>Full Name</label>
+        <input type="text" id="name" placeholder="e.g. Insaf Ibrahim"/>
+      </div>
+      <div class="field">
+        <label>Job Title / Role</label>
+        <input type="text" id="role" placeholder="e.g. Software Engineer"/>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="field">
+        <label>Email</label>
+        <input type="email" id="email" placeholder="you@email.com"/>
+      </div>
+      <div class="field">
+        <label>Phone</label>
+        <input type="text" id="phone" placeholder="+91 9876543210"/>
+      </div>
+    </div>
+    <div class="form-row full">
+      <div class="field">
+        <label>LinkedIn / Portfolio URL (optional)</label>
+        <input type="text" id="linkedin" placeholder="linkedin.com/in/yourname"/>
+      </div>
+    </div>
+  </div>
+
+  <!-- Experience -->
+  <div class="card">
+    <p class="card-title">Experience & Education</p>
+    <div class="form-row full">
+      <div class="field">
+        <label>Work Experience (or internships)</label>
+        <textarea id="experience" rows="3" placeholder="e.g. 6-month internship at XYZ as frontend developer, built 3 React projects..."></textarea>
+      </div>
+    </div>
+    <div class="form-row full" style="margin-top:1rem">
+      <div class="field">
+        <label>Education</label>
+        <textarea id="education" rows="2" placeholder="e.g. BCA at Yenepoya University, 2022-2025, CGPA 8.5"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- Skills & Style -->
+  <div class="card">
+    <p class="card-title">Skills & Resume Style</p>
+    <div class="form-row full" style="margin-bottom:1.25rem">
+      <div class="field">
+        <label>Your Skills</label>
+        <input type="text" id="skills" placeholder="e.g. Python, React, AWS, Machine Learning, Docker"/>
+      </div>
+    </div>
+
+    <label style="margin-bottom:10px; display:block">Resume Tone</label>
+    <div class="pill-grid" id="tonePills">
+      <button class="pill active" data-val="professional">Professional</button>
+      <button class="pill" data-val="creative">Creative</button>
+      <button class="pill" data-val="technical">Technical</button>
+      <button class="pill" data-val="fresher">Fresher / Entry-level</button>
+    </div>
+
+    <div class="form-row full" style="margin-top:1.25rem">
+      <div class="field">
+        <label>Target Job / Industry (optional)</label>
+        <input type="text" id="target" placeholder="e.g. AI Engineer at a startup, Cloud Architect at MNC"/>
+      </div>
+    </div>
+  </div>
+
+  <button class="generate-btn" id="genBtn" onclick="generateResume()">
+    ✦ Generate My Resume
+  </button>
+
+  <div class="result-card" id="resultCard">
+    <div class="result-header">
+      <span class="result-title">Your Resume</span>
+      <div class="result-actions">
+        <button class="action-btn" onclick="copyResume()">📋 Copy</button>
+        <button class="action-btn" onclick="generateResume()">↺ Regenerate</button>
+      </div>
+    </div>
+    <div class="resume-content" id="resumeContent"></div>
+  </div>
+
+</div>
+
+<script>
+  // ============================================================
+  // 🔑 PASTE YOUR GROQ API KEY BELOW
+  //    Get it FREE at: https://console.groq.com
+  // ============================================================
+  const GROQ_API_KEY = "GROQ_API_KEY_HERE";
+  // ============================================================
+
+  let tone = "professional";
+
+  window.onload = () => {
+    if (GROQ_API_KEY === "GROQ_API_KEY_HERE") {
+      document.getElementById("apiNotice").style.display = "block";
+    }
+  };
+
+  document.querySelectorAll("#tonePills .pill").forEach(p => {
+    p.onclick = () => {
+      document.querySelectorAll("#tonePills .pill").forEach(x => x.classList.remove("active"));
+      p.classList.add("active");
+      tone = p.dataset.val;
+    };
+  });
+
+  async function generateResume() {
+    const name = document.getElementById("name").value.trim();
+    const role = document.getElementById("role").value.trim();
+
+    if (!name || !role) {
+      document.getElementById("name").focus();
+      return;
+    }
+
+    const email = document.getElementById("email").value.trim();
+    const phone = document.getElementById("phone").value.trim();
+    const linkedin = document.getElementById("linkedin").value.trim();
+    const experience = document.getElementById("experience").value.trim();
+    const education = document.getElementById("education").value.trim();
+    const skills = document.getElementById("skills").value.trim();
+    const target = document.getElementById("target").value.trim();
+
+    const btn = document.getElementById("genBtn");
+    btn.disabled = true;
+    btn.innerHTML = '<span class="dots"><span></span><span></span><span></span></span> Crafting your resume...';
+
+    const prompt = `Create a ${tone} resume for the following person. Format it cleanly with clear sections using markdown-style headers (##) for section names and bullet points for details.
+
+Person Details:
+- Name: ${name}
+- Target Role: ${role}
+- Email: ${email || "Not provided"}
+- Phone: ${phone || "Not provided"}
+- LinkedIn/Portfolio: ${linkedin || "Not provided"}
+- Experience: ${experience || "Fresher, no experience yet"}
+- Education: ${education || "Not provided"}
+- Skills: ${skills || "Not provided"}
+- Target Job/Industry: ${target || "General"}
+- Tone: ${tone}
+
+Write a complete, ready-to-use resume with these sections:
+1. Professional Summary (3-4 impactful sentences tailored to their target role)
+2. Skills (organized by category)
+3. Experience (or Projects if fresher)
+4. Education
+5. Achievements / Extra (if relevant)
+
+Make it ATS-friendly, impactful, and tailored to the ${tone} tone. Use action verbs. Be specific. Return only the resume content, no extra commentary.`;
+
+    try {
+      const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${GROQ_API_KEY}`
+        },
+        body: JSON.stringify({
+          model: "llama-3.1-8b-instant",
+          max_tokens: 1500,
+          messages: [
+            { role: "system", content: "You are an expert resume writer with 10 years of experience helping candidates land jobs at top companies. Write professional, ATS-optimized resumes." },
+            { role: "user", content: prompt }
+          ]
+        })
+      });
+
+      const data = await response.json();
+      let resume = data.choices?.[0]?.message?.content || "Could not generate resume. Please check your API key.";
+
+      // Format markdown-style headers into styled HTML
+      resume = resume
+        .replace(/^#{4,6}\s+(.+)$/gm, '<h3>$1</h3>')
+        .replace(/^###\s+(.+)$/gm, '<h3>$1</h3>')
+        .replace(/^##\s+(.+)$/gm, '<h2>$1</h2>')
+        .replace(/^#\s+(.+)$/gm, '<h2>$1</h2>')
+        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+        .replace(/^[-*]\s+(.+)$/gm, '<li>$1</li>')
+        .replace(/(<li>.*<\/li>)/gs, '<ul>$1</ul>')
+        .replace(/\n{2,}/g, '<br/>')
+        .replace(/\n/g, '<br/>');
+
+      document.getElementById("resumeContent").innerHTML = resume;
+      document.getElementById("resultCard").style.display = "block";
+      document.getElementById("resultCard").scrollIntoView({ behavior: "smooth", block: "start" });
+
+    } catch (err) {
+      document.getElementById("resumeContent").textContent = "Something went wrong. Check your API key and try again.";
+      document.getElementById("resultCard").style.display = "block";
+    }
+
+    btn.disabled = false;
+    btn.innerHTML = "✦ Regenerate Resume";
+  }
+
+  function copyResume() {
+    const text = document.getElementById("resumeContent").innerText;
+    navigator.clipboard.writeText(text).then(() => {
+      const btn = document.querySelector(".action-btn");
+      btn.textContent = "✅ Copied!";
+      setTimeout(() => { btn.textContent = "📋 Copy"; }, 1800);
+    });
+  }
+</script>
+</body>
+</html>
